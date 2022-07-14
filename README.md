@@ -1,4 +1,4 @@
-# Ema Template
+# Mood Tracker Tutorial
 
 WIP: Source for upcoming Ema tutorial.
 
