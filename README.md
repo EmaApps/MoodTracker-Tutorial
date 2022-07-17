@@ -7,6 +7,7 @@ WIP: Source for upcoming Ema tutorial.
 To develop with full IDE support in Visual Studio Code, follow these steps:
 
 - [Install Nix](https://nixos.org/download.html) & [enable Flakes](https://nixos.wiki/wiki/Flakes)
+- Setup the [garnix cache](https://garnix.io/docs/caching) (Nix binary cache). This is optional if you are okay with compiling for hours.
 - Run `nix-shell --run haskell-language-server` to sanity check your environment 
 - Open the repository [as single-folder workspace](https://code.visualstudio.com/docs/editor/workspaces#_singlefolder-workspaces) in Visual Studio Code
     - Install the recommended extensions
@@ -17,6 +18,7 @@ All but the final step need to be done only once. Check [the Ema tutorial](https
 
 ## Note
 
+- We are using GHC 9.2 which is not yet the default in `nixpkgs`, so you may want to use the [garnix cache](https://garnix.io/docs/cachin
 - This project uses [relude](https://github.com/kowainik/relude) as its prelude, as well as Tailwind+Blaze as CSS utility and HTML DSL. Even though the author highly recommends them, you are of course free to swap them out for the library of your choice.
   - Tailwind CSS is compiled, alongside Ghcid, via foreman (see `./Procfile`)
 - As a first step to using this template, 

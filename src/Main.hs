@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Main where
@@ -8,49 +9,37 @@ import Data.Csv qualified as Csv
 import Data.Map.Strict qualified as Map
 import Data.Time
 import Ema
-import Ema.Route.Generic
+import Ema.Route.Generic.TH
 import GHC.IO.Exception (userError)
-import Generics.SOP qualified as SOP
 import Optics.Core (prism')
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
 
-data Route
-  = Route_Index
-  | Route_Date Date
+data Model = Model
+  { modelDays :: Map Date Mood
+  }
   deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (SOP.Generic, SOP.HasDatatypeInfo)
-  deriving
-    (HasSubRoutes, HasSubModels, IsRoute)
-    via ( GenericRoute
-            Route
-            '[ WithModel Model
-             , -- This is automatically deduced in GHC 9.2
-               -- But nixpkgs is still oin 9.0, so we must manually specify it.
-               WithSubRoutes
-                '[ FileRoute "index.html"
-                 , FolderRoute "date" Date
-                 ]
-             ]
-        )
 
 -- | Isomorphic to `Data.Time.Calendar.Day`
 newtype Date = Date (Integer, Int, Int)
   deriving stock (Show, Eq, Ord, Generic)
 
-instance Csv.FromField Date where
-  parseField f = do
-    s <- Csv.parseField @String f
-    case parseTimeM False defaultTimeLocale "%Y-%m-%d" s of
-      Left err -> fail err
-      Right date ->
-        pure $ Date $ toGregorian date
+data Mood = Bad | Neutral | Good
+  deriving stock (Show, Eq, Ord, Generic, Read)
+
+data Route
+  = Route_Index
+  | Route_Date Date
+  deriving stock (Show, Eq, Ord, Generic)
+
+deriveGeneric ''Route
+deriveIsRoute ''Route [t|'[WithModel Model]|]
 
 instance IsRoute Date where
   type RouteModel Date = Model
-  routeEncoder = mkRouteEncoder $ \(Model moods) ->
+  routeEncoder = mkRouteEncoder $ \(Model _moods) ->
     prism'
       ( \(Date (y, m, d)) ->
           formatTime defaultTimeLocale "%Y-%m-%d.html" $
@@ -61,13 +50,13 @@ instance IsRoute Date where
       )
   allRoutes (Model moods) = Map.keys moods
 
-data Model = Model
-  { modelDays :: Map Date Mood
-  }
-  deriving stock (Show, Eq, Ord, Generic)
-
-data Mood = Bad | Neutral | Good
-  deriving stock (Show, Eq, Ord, Generic, Read)
+instance Csv.FromField Date where
+  parseField f = do
+    s <- Csv.parseField @String f
+    case parseTimeM False defaultTimeLocale "%Y-%m-%d" s of
+      Left err -> fail err
+      Right date ->
+        pure $ Date $ toGregorian date
 
 instance Csv.FromField Mood where
   parseField f = do
