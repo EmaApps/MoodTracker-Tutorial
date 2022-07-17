@@ -29,7 +29,7 @@
               nixpkgs-fmt
               foreman;
             inherit (hp)
-              cabal-fmt
+              # cabal-fmt
               fourmolu;
             inherit (inputs'.tailwind-haskell.packages)
               tailwind;
