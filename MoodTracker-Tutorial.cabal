@@ -33,7 +33,6 @@ executable MoodTracker-Tutorial
     , ema                 >=0.7
     , filepath
     , generic-optics
-    , generics-sop
     , monad-logger
     , optics-core
     , relude
