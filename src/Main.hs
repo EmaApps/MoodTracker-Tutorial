@@ -3,10 +3,13 @@
 
 module Main where
 
+import Control.Exception (throw)
+import Data.Csv qualified as Csv
 import Data.Map.Strict qualified as Map
 import Data.Time
 import Ema
 import Ema.Route.Generic
+import GHC.IO.Exception (userError)
 import Generics.SOP qualified as SOP
 import Optics.Core (prism')
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
@@ -37,6 +40,14 @@ data Route
 newtype Date = Date (Integer, Int, Int)
   deriving stock (Show, Eq, Ord, Generic)
 
+instance Csv.FromField Date where
+  parseField f = do
+    s <- Csv.parseField @String f
+    case parseTimeM False defaultTimeLocale "%Y-%m-%d" s of
+      Left err -> fail err
+      Right date ->
+        pure $ Date $ toGregorian date
+
 instance IsRoute Date where
   type RouteModel Date = Model
   routeEncoder = mkRouteEncoder $ \(Model moods) ->
@@ -48,7 +59,7 @@ instance IsRoute Date where
       ( fmap (Date . toGregorian)
           . parseTimeM False defaultTimeLocale "%Y-%m-%d.html"
       )
-  allRoutes _ = []
+  allRoutes (Model moods) = Map.keys moods
 
 data Model = Model
   { modelDays :: Map Date Mood
@@ -56,10 +67,22 @@ data Model = Model
   deriving stock (Show, Eq, Ord, Generic)
 
 data Mood = Bad | Neutral | Good
-  deriving stock (Show, Eq, Ord, Generic)
+  deriving stock (Show, Eq, Ord, Generic, Read)
+
+instance Csv.FromField Mood where
+  parseField f = do
+    s <- Csv.parseField @String f
+    case readEither @Mood s of
+      Left err -> fail $ toString err
+      Right v -> pure v
 
 instance EmaSite Route where
-  siteInput _ _ = pure $ pure $ Model mempty
+  siteInput _ _ = do
+    s <- readFileLBS "data/moods.csv"
+    case toList <$> Csv.decode Csv.NoHeader s of
+      Left err -> throw $ userError err
+      Right moods ->
+        pure $ pure $ Model $ Map.fromList moods
   siteOutput rp model r =
     Ema.AssetGenerated Ema.Html . RU.renderHtml $ do
       H.docType

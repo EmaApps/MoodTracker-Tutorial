@@ -39,6 +39,7 @@ executable MoodTracker-Tutorial
     , relude
     , text
     , time
+    , cassava
     , unionmount          >=0.2
     , unliftio
 
