@@ -39,16 +39,17 @@ deriveIsRoute ''Route [t|'[WithModel Model]|]
 
 instance IsRoute Date where
   type RouteModel Date = Model
-  routeEncoder = mkRouteEncoder $ \(Model _moods) ->
-    prism'
-      ( \(Date (y, m, d)) ->
-          formatTime defaultTimeLocale "%Y-%m-%d.html" $
-            fromGregorian y m d
-      )
-      ( fmap (Date . toGregorian)
-          . parseTimeM False defaultTimeLocale "%Y-%m-%d.html"
-      )
-  allRoutes (Model moods) = Map.keys moods
+  routePrism (Model _moods) =
+    toPrism_ $
+      prism'
+        ( \(Date (y, m, d)) ->
+            formatTime defaultTimeLocale "%Y-%m-%d.html" $
+              fromGregorian y m d
+        )
+        ( fmap (Date . toGregorian)
+            . parseTimeM False defaultTimeLocale "%Y-%m-%d.html"
+        )
+  routeUniverse (Model moods) = Map.keys moods
 
 instance Csv.FromField Date where
   parseField f = do

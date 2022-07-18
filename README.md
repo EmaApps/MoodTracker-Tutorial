@@ -1,6 +1,6 @@
 # Mood Tracker Tutorial
 
-WIP: Source for upcoming Ema tutorial.
+WIP: Source for the upcoming Ema tutorial.
 
 ## Getting Started
 
