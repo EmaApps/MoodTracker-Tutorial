@@ -5,6 +5,7 @@
 module Main where
 
 import Control.Exception (throw)
+import Control.Monad.Logger (logErrorNS, logInfoNS)
 import Data.Csv qualified as Csv
 import Data.Map.Strict qualified as Map
 import Data.Time
@@ -12,10 +13,13 @@ import Ema
 import Ema.Route.Generic.TH
 import GHC.IO.Exception (userError)
 import Optics.Core (prism')
+import System.FSNotify qualified as FSNotify
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
+import UnliftIO (Chan, newChan, readChan)
+import UnliftIO.Concurrent (forkIO, threadDelay)
 
 data Model = Model
   { modelDays :: Map Date Mood
@@ -68,11 +72,33 @@ instance Csv.FromField Mood where
 
 instance EmaSite Route where
   siteInput _ _ = do
-    s <- readFileLBS "data/moods.csv"
-    case toList <$> Csv.decode Csv.NoHeader s of
-      Left err -> throw $ userError err
-      Right moods ->
-        pure $ pure $ Model $ Map.fromList moods
+    model0 <- readModel "data/moods.csv"
+    pure . Dynamic . (model0,) $ \setModel -> do
+      ch <- liftIO $ watchDirForked "data"
+      let loop = do
+            logInfoNS "fsnotify" "Waiting for fs event ..."
+            evt <- liftIO $ readChan ch
+            logInfoNS "fsnotify" $ "Got fs event: " <> show evt
+            setModel =<< readModel (FSNotify.eventPath evt)
+            loop
+      loop
+    where
+      readModel fp = do
+        s <- readFileLBS fp
+        case toList <$> Csv.decode Csv.NoHeader s of
+          Left err -> logErrorNS "csv" (toText err) >> pure (Model mempty)
+          Right moods -> pure $ Model $ Map.fromList moods
+      -- Observe changes to a directory path, and return the `Chan` of its events.
+      watchDirForked :: FilePath -> IO (Chan FSNotify.Event)
+      watchDirForked path = do
+        ch <- newChan
+        -- FIXME: We should be using race_, not forkIO.
+        void . forkIO $
+          FSNotify.withManager $ \mgr -> do
+            _stopListening <- FSNotify.watchDirChan mgr path (const True) ch
+            threadDelay maxBound
+        pure ch
+
   siteOutput rp model r =
     Ema.AssetGenerated Ema.Html . RU.renderHtml $ do
       H.docType

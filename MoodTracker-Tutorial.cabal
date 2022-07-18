@@ -34,6 +34,7 @@ executable MoodTracker-Tutorial
     , filepath
     , generic-optics
     , monad-logger
+    , fsnotify
     , optics-core
     , relude
     , text
