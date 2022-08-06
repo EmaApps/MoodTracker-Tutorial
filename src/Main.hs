@@ -4,14 +4,12 @@
 
 module Main where
 
-import Control.Exception (throw)
 import Control.Monad.Logger (logErrorNS, logInfoNS)
 import Data.Csv qualified as Csv
 import Data.Map.Strict qualified as Map
 import Data.Time
 import Ema
 import Ema.Route.Generic.TH
-import GHC.IO.Exception (userError)
 import Optics.Core (prism')
 import System.FSNotify qualified as FSNotify
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
@@ -100,7 +98,7 @@ instance EmaSite Route where
         pure ch
 
   siteOutput rp model r =
-    Ema.AssetGenerated Ema.Html . RU.renderHtml $ do
+    pure . Ema.AssetGenerated Ema.Html . RU.renderHtml $ do
       H.docType
       H.html ! A.lang "en" $ do
         H.head $ do
