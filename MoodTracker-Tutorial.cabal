@@ -30,7 +30,7 @@ executable MoodTracker-Tutorial
     , containers
     , data-default
     , directory
-    , ema                 >=0.7
+    , ema                 >=0.8
     , filepath
     , generic-optics
     , monad-logger
