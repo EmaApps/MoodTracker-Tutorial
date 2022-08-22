@@ -22,7 +22,7 @@
         # "haskellProjects" comes from https://github.com/srid/haskell-flake
         haskellProjects.default = {
           root = ./.;
-          haskellPackages = pkgs.haskell.packages.ghc923;
+          haskellPackages = pkgs.haskell.packages.ghc924;
           buildTools = hp: {
             inherit (pkgs)
               treefmt
