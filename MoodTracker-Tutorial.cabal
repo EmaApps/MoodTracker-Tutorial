@@ -31,6 +31,7 @@ executable MoodTracker-Tutorial
     , data-default
     , directory
     , ema                 >=0.8
+    , ema-generics
     , filepath
     , generic-optics
     , monad-logger
